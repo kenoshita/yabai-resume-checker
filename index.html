@@ -69,7 +69,7 @@
     <p class="muted">PDF / Word / TXT に対応。アップロードして即チェック（モック）。</p>
   </section>
 
-  <!-- ステップ0：アップロード -->
+  <!-- アップロード -->
   <section id="upload" class="grid">
     <div class="panel card">
       <label id="drop" class="drop" tabindex="0" for="file" aria-label="ファイルをドラッグ＆ドロップ、またはクリックして選択">
@@ -85,13 +85,13 @@
     </div>
   </section>
 
-  <!-- ステップ0.5：解析中 -->
+  <!-- 解析中 -->
   <section id="loading" class="panel progress" hidden aria-live="polite">
     <div class="spinner" role="status" aria-label="解析中"></div>
     <div>解析中…数秒お待ちください</div>
   </section>
 
-  <!-- ステップ1+2：結果 & ガイド -->
+  <!-- 結果 & ガイド -->
   <section id="content" class="content" hidden>
     <div>
       <div class="panel">
@@ -146,14 +146,11 @@
 
 <script>
 (function(){
-  // === ユーティリティ ===
+  // === Util ===
   const $ = (s)=>document.querySelector(s);
   const $$ = (s)=>Array.from(document.querySelectorAll(s));
   const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
-  function toast(msg){
-    const t = $('#toast'); t.textContent = msg; t.style.opacity = '1';
-    setTimeout(()=>{ t.style.opacity = '0'; }, 1600);
-  }
+  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.opacity='1'; setTimeout(()=>{t.style.opacity='0';},1600); }
   function el(tag, attrs={}, ...children){
     const n = document.createElement(tag);
     for (const [k,v] of Object.entries(attrs)){
@@ -165,7 +162,7 @@
     return n;
   }
 
-  // === DOM参照 ===
+  // === DOM ===
   const drop = $('#drop'), file = $('#file'), pick = $('#pick');
   const secUpload = $('#upload'), secLoading = $('#loading'), secContent = $('#content');
   const accRoot = $('#accRoot'), issueCount = $('#issueCount');
@@ -173,7 +170,7 @@
   const guidesSection = $('#guidesSection'), adSlot = $('#adSlot'), guidesRoot = $('#guidesRoot');
   const btnExport = $('#exportTxt'), btnCopy = $('#copyAll');
 
-  // === モックデータ ===
+  // === Mock Data ===
   const MOCK_ISSUES = [
     {id:"lack-metrics",title:"成果が数値で示されていません",category:"信頼性・具体性",severity:"high",evidence:["・売上拡大に貢献しました","・顧客満足度向上に尽力しました"]},
     {id:"vague-role",title:"職務内容が抽象的です",category:"信頼性・具体性",severity:"med",evidence:["・色々な業務を担当しました"]},
@@ -188,7 +185,7 @@
     "format-dates":{title:"日付形式が不統一",tips:["全体で表記統一（YYYY年MM月）","在籍期間は月まで、空白期間は簡潔に補足","半角・全角の混在に注意"],placeholder:"例）2021年04月〜2023年09月、2023年10月〜現在"}
   };
 
-  // === 安定イベント ===
+  // === Events ===
   pick.addEventListener('click', ()=> file.click());
   drop.addEventListener('click', ()=> file.click());
   drop.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); file.click(); }});
@@ -224,7 +221,7 @@
     toast('全体をコピーしました');
   });
 
-  // === 共通解析 ===
+  // === Analysis ===
   async function runAnalysis(f){
     if(!f){ toast('ファイルが取得できませんでした'); return; }
     if(!/\.(pdf|docx?|txt|rtf)$/i.test(f.name)){ toast('対応: PDF / DOC / DOCX / TXT / RTF'); return; }
@@ -239,14 +236,21 @@
     // 擬似解析
     await sleep(900);
 
-    if (timedOut) return;
-    clearTimeout(watchdog);
-
-    // ステップ1 描画
-    renderIssues(MOCK_ISSUES);
-
-    secLoading.hidden = true; secContent.hidden = false;
-    file.value = ""; // 同じファイル再選択でも発火するように
+    // 描画は必ずスピナーを閉じるように try/finally で囲む
+    try {
+      if (timedOut) return;
+      renderIssues(MOCK_ISSUES);
+      secContent.hidden = false;
+    } finally {
+      clearTimeout(watchdog);
+      secLoading.hidden = true;
+      file.value = ""; // 同じファイル再選択でも発火させる
+      // 何も描画できなければアップロード画面へ戻す
+      if (!accRoot.innerHTML.trim()) {
+        secContent.hidden = true;
+        secUpload.hidden = false;
+      }
+    }
   }
 
   function renderIssues(issues){
@@ -258,7 +262,8 @@
     accRoot.innerHTML = '';
     Object.entries(byCat).forEach(([cat,list])=>{
       if(list.length===0) return;
-      const id = 'acc-'+btoa(cat).replace(/=/g,'');
+      // ★ btoa の代わりに日本語でも安全な ID 生成
+      const id = 'acc-' + encodeURIComponent(cat);
       const btn = el('button',{class:'acc-btn','aria-controls':id,'aria-expanded':'false'},
         el('span',{class:'acc-icon','aria-hidden':'true'},'⚠️'),
         el('span',{class:'acc-title'},cat),
@@ -302,10 +307,9 @@
     });
   }
 
-  // 予防：グローバルJSエラーを見逃さない
+  // 保険：グローバルエラーもトースト表示
   window.addEventListener('error', e=>{ toast('スクリプトエラー: '+(e.message||'unknown')); });
-
-  console.log('[ready] stable enhanced build loaded');
+  console.log('[ready] stable build with JP-safe IDs');
 })();
 </script>
 </body>
