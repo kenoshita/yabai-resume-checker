@@ -132,71 +132,138 @@
   </main>
 
   <script>
-    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s)), sleep=ms=>new Promise(r=>setTimeout(r,ms));
-    const el=(t,a={},...c)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='class')n.className=v;else if(k.startsWith('on')&&typeof v==='function')n.addEventListener(k.slice(2),v);else if(v!=null)n.setAttribute(k,v)}c.forEach(x=>n.appendChild(typeof x==='string'?document.createTextNode(x):x));return n}
+  // DOM構築後に初期化（他のエラーで止まるのを防ぐ）
+  document.addEventListener('DOMContentLoaded', () => {
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const el = (t,a={},...c)=>{const n=document.createElement(t);
+      for (const [k,v] of Object.entries(a)) {
+        if (k==='class') n.className=v;
+        else if (k.startsWith('on') && typeof v==='function') n.addEventListener(k.slice(2),v);
+        else if (v!=null) n.setAttribute(k,v);
+      }
+      c.forEach(x=>n.appendChild(typeof x==='string'?document.createTextNode(x):x));
+      return n;
+    };
 
-    const MOCK_ISSUES=[
+    // 要素参照
+    const dropzone = $('#dropzone');
+    const fileInput = $('#file-input');
+    const pickBtn   = document.getElementById('pick-btn');
+    const uploadSection = $('#upload-section');
+    const loadingSection = $('#loading-section');
+    const resultWrap = $('#result-wrap');
+    const accRoot = $('#acc-root');
+    const issueCountEl = $('#issue-count');
+    const viewGuidesBtn = $('#view-guides-btn');
+    const viewGuidesBtnMobile = $('#view-guides-btn-mobile');
+    const guidesSection = $('#guides-section');
+    const adSlot = $('#ad-slot');
+    const guidesRoot = $('#guides-root');
+    const reuploadBtn = $('#reupload-btn');
+    const exportTxtBtn = $('#export-txt');
+    const copyAllBtn = $('#copy-all');
+
+    // 念のためログ（開発用）
+    console.log('[init] DOM ready');
+
+    // ファイルピッカー
+    const openFilePicker = () => {
+      if (!fileInput) return;
+      fileInput.click();
+    };
+
+    // ★ ボタンにも確実に結び付ける
+    if (pickBtn) {
+      pickBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openFilePicker();
+      });
+    }
+
+    // ドロップゾーン（ラベル全体）
+    if (dropzone) {
+      dropzone.addEventListener('click', openFilePicker);
+      dropzone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFilePicker(); }
+      });
+      ['dragenter','dragover'].forEach(ev => {
+        dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); });
+      });
+      ['dragleave','drop'].forEach(ev => {
+        dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); });
+      });
+      dropzone.addEventListener('drop', e => {
+        const f = e.dataTransfer?.files?.[0];
+        if (f) handleUpload(f);
+      });
+    }
+
+    // ファイル選択時
+    if (fileInput) {
+      fileInput.addEventListener('change', e => {
+        const f = e.target.files?.[0];
+        if (f) handleUpload(f);
+      });
+    }
+
+    // モックの検出データ（ここは元のままでもOK）
+    const MOCK_ISSUES = [
       {id:"lack-metrics",title:"成果が数値で示されていません",category:"信頼性・具体性",severity:"high",evidence:["・売上拡大に貢献しました","・顧客満足度向上に尽力しました"]},
       {id:"vague-role",title:"職務内容が抽象的です",category:"信頼性・具体性",severity:"med",evidence:["・色々な業務を担当しました"]},
       {id:"neg-leaving",title:"退職理由がネガティブに書かれています",category:"ネガティブ印象ワード",severity:"med",evidence:["・人間関係の悪化により退職"]},
       {id:"format-dates",title:"日付形式が不統一です",category:"基本情報・体裁",severity:"low",evidence:["・2021/4 と 2021年04月 が混在"]}
     ];
-    const CATEGORY_ORDER=["基本情報・体裁","信頼性・具体性","ネガティブ印象ワード","誤字・形式的エラー","ATSに不利","読み手印象を下げる構成"];
-    const GUIDES={
-      "lack-metrics":{title:"成果が数値で示されていません",tips:["成果は数値・割合・件数・規模・期間・比較対象を添えると伝わります。","例示は“型”に留め、具体数値はあなた自身で入力してください（虚偽防止）。","比較の軸（前年比・前四半期比・目標比）を明確にしましょう。"],placeholder:"例）新規案件の年間◯◯件、前年比◯◯%、平均リードタイム◯◯日短縮 など"},
-      "vague-role":{title:"職務内容が抽象的です",tips:["「色々」ではなく、担当タスクを列挙しましょう（顧客折衝／資料作成／データ分析 等）。","1タスク=1行で、規模や頻度（週◯回／月◯件）を添えると具体性UP。","使用ツール・関与フェーズ・社内外ステークホルダーも書くと効果的。"],placeholder:"例）週◯回の顧客定例、◯◯資料作成（月◯本）、データ分析（BI: ◯◯） など"},
-      "neg-leaving":{title:"退職理由がネガティブに書かれています",tips:["前向きな動機（新領域への挑戦／スキル向上／責任範囲拡大 等）に言い換えましょう。","事実に忠実かつ簡潔に（1〜2行）。感情表現は避けます。","応募職種と接続する“合理的な理由”を添えると納得感が増します。"],placeholder:"例）◯◯領域での専門性深化を目的に、より◯◯に近い環境を志向 など"},
-      "format-dates":{title:"日付形式が不統一です",tips:["表記は履歴書全体で統一（例：YYYY年MM月）。","在籍期間は月まで記載し、空白期間は簡潔に補足しましょう。","半角・全角の混在にも注意。"],placeholder:"例）2021年04月〜2023年09月、2023年10月〜現在"}
-    };
-
-    const dropzone=$('#dropzone'), fileInput=$('#file-input'), uploadSection=$('#upload-section'), loadingSection=$('#loading-section');
-    document.getElementById('pick-btn')?.addEventListener('click', (e)=>{ e.preventDefault();fileInput.click();});
-　　 const resultWrap=$('#result-wrap'), accRoot=$('#acc-root'), issueCountEl=$('#issue-count');
-    const resultWrap=$('#result-wrap'), accRoot=$('#acc-root'), issueCountEl=$('#issue-count');
-    const viewGuidesBtn=$('#view-guides-btn'), viewGuidesBtnMobile=$('#view-guides-btn-mobile');
-    const guidesSection=$('#guides-section'), adSlot=$('#ad-slot'), guidesRoot=$('#guides-root');
-    const reuploadBtn=$('#reupload-btn'), exportTxtBtn=$('#export-txt'), copyAllBtn=$('#copy-all');
-
-    const openFilePicker=()=>fileInput.click();
-    dropzone.addEventListener('click', openFilePicker);
-    dropzone.addEventListener('keydown', e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openFilePicker();}});
-    ['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.add('drag')}));
-    ['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.remove('drag')}));
-    dropzone.addEventListener('drop', e=>{const f=e.dataTransfer.files?.[0];if(f)handleUpload(f)});
-    fileInput.addEventListener('change', e=>{const f=e.target.files?.[0];if(f)handleUpload(f)});
+    const CATEGORY_ORDER = ["基本情報・体裁","信頼性・具体性","ネガティブ印象ワード","誤字・形式的エラー","ATSに不利","読み手印象を下げる構成"];
 
     async function handleUpload(file){
-      if(!/\.(pdf|docx?|txt|rtf)$/i.test(file.name)){ toast('対応形式は PDF / DOC / DOCX / TXT / RTF です'); return; }
-      uploadSection.hidden=true; loadingSection.hidden=false;
-      await sleep(1000); renderIssues(MOCK_ISSUES);
-      loadingSection.hidden=true; resultWrap.hidden=false;
+      if (!/\.(pdf|docx?|txt|rtf)$/i.test(file.name)) { toast('対応形式は PDF / DOC / DOCX / TXT / RTF です'); return; }
+      uploadSection.hidden = true;
+      loadingSection.hidden = false;
+      await sleep(800); // モック待機
+      renderIssues(MOCK_ISSUES);
+      loadingSection.hidden = true;
+      resultWrap.hidden = false;
     }
 
     function renderIssues(issues){
-      issueCountEl.textContent=String(issues.length);
-      const byCat={}; CATEGORY_ORDER.forEach(c=>byCat[c]=[]);
-      issues.forEach(i=>{ if(!byCat[i.category]) byCat[i.category]=[]; byCat[i.category].push(i); });
-      accRoot.innerHTML='';
-      Object.entries(byCat).forEach(([cat,list])=>{
-        if(list.length===0) return;
-        const id='acc-'+btoa(cat).replace(/=/g,'');
-        const btn=el('button',{class:'acc-btn','aria-controls':id,'aria-expanded':'false'},
+      issueCountEl.textContent = String(issues.length);
+      const byCat = {};
+      CATEGORY_ORDER.forEach(c=> byCat[c]=[]);
+      issues.forEach(i => {
+        if (!byCat[i.category]) byCat[i.category] = [];
+        byCat[i.category].push(i);
+      });
+
+      accRoot.innerHTML = '';
+      Object.entries(byCat).forEach(([cat, list]) => {
+        if (list.length === 0) return;
+        const id = 'acc-' + btoa(cat).replace(/=/g,'');
+        const btn = el('button', {class:'acc-btn','aria-controls':id,'aria-expanded':'false'},
           el('span',{class:'acc-icon','aria-hidden':'true'},'⚠️'),
-          el('span',{class:'acc-title'},cat),
-          el('span',{class:'acc-count'},`${list.length}件`)
+          el('span',{class:'acc-title'}, cat),
+          el('span',{class:'acc-count'}, `${list.length}件`)
         );
-        const panel=el('div',{id,class:'acc-panel',role:'region','aria-label':cat});
-        const wrap=el('div',{class:'acc-item'},btn,panel);
-        btn.addEventListener('click',()=>{
-          const opened=panel.style.maxHeight && panel.style.maxHeight!=='0px';
-          if(opened){panel.style.maxHeight='0px';panel.classList.remove('open');btn.setAttribute('aria-expanded','false');}
-          else{panel.style.maxHeight=panel.scrollHeight+'px';panel.classList.add('open');btn.setAttribute('aria-expanded','true');}
+        const panel = el('div',{id, class:'acc-panel', role:'region','aria-label':cat});
+        const wrap = el('div',{class:'acc-item'}, btn, panel);
+        btn.addEventListener('click', ()=>{
+          const opened = panel.style.maxHeight && panel.style.maxHeight !== '0px';
+          if (opened) {
+            panel.style.maxHeight = '0px'; panel.classList.remove('open'); btn.setAttribute('aria-expanded','false');
+          } else {
+            panel.style.maxHeight = panel.scrollHeight + 'px'; panel.classList.add('open'); btn.setAttribute('aria-expanded','true');
+          }
         });
         list.forEach(issue=>{
-          const sevClass=issue.severity==='high'?'high':issue.severity==='med'?'med':'low';
-          const block=el('div',{class:'issue'},
-            el('div',{class:'issue-head'},el('span',{'aria-hidden':'true'},'⚠️'),el('strong',{},issue.title),el('span',{class:`sev ${sevClass}`},issue.severity.toUpperCase())),
-            issue.evidence?.length?el('div',{class:'evidence'},'例：'+issue.evidence.join(' / ')):el('div')
+          const sevClass = issue.severity==='high'?'high':issue.severity==='med'?'med':'low';
+          const block = el('div',{class:'issue'},
+            el('div',{class:'issue-head'},
+              el('span',{'aria-hidden':'true'},'⚠️'),
+              el('strong',{}, issue.title),
+              el('span',{class:`sev ${sevClass}`}, issue.severity.toUpperCase())
+            ),
+            issue.evidence?.length ? el('div',{class:'evidence'}, '例：' + issue.evidence.join(' / ')) : el('div')
           );
           panel.appendChild(block);
         });
@@ -204,27 +271,21 @@
       });
     }
 
-    async function openGuides(){
-      guidesSection.hidden=false; guidesRoot.hidden=true; adSlot.hidden=false;
-      await sleep(2000); adSlot.hidden=true; buildGuides(MOCK_ISSUES); guidesRoot.hidden=false;
-      guidesSection.scrollIntoView({behavior:'smooth',block:'start'});
+    // ガイドは後で（省略可）
+    function toast(msg){
+      let t = document.querySelector('#toast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id='toast';
+        t.setAttribute('style','position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#10151E;border:1px solid #2A3240;color:#E9EEF5;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:9999');
+        document.body.appendChild(t);
+      }
+      t.textContent = msg;
+      t.style.opacity = '1';
+      setTimeout(()=>{ t.style.opacity = '0'; }, 1600);
     }
-    function buildGuides(issues){
-      guidesRoot.innerHTML='';
-      issues.forEach(i=>{
-        const g=GUIDES[i.id]; if(!g) return;
-        const tipsList=el('ul',{class:'tips'},...g.tips.map(t=>el('li',{},t)));
-        const notes=el('textarea',{class:'notes',placeholder:g.placeholder,'data-issue-id':i.id});
-        const copyBtn=el('button',{class:'btn',onclick:()=>{navigator.clipboard.writeText(notes.value||'');toast('コピーしました')}},'コピー');
-        const saveBtn=el('button',{class:'btn',onclick:()=>{notes.setAttribute('data-saved','1');toast('一時保存しました')}},'一時保存');
-        const card=el('div',{class:'guide'},el('h4',{},'💡 ',g.title),tipsList,el('label',{},'あなたの修正案を入力'),notes,el('div',{class:'mini-actions'},saveBtn,copyBtn));
-        guidesRoot.appendChild(card);
-      });
-    }
-    exportTxtBtn?.addEventListener('click',()=>{
-      const notes=$$('#guides-root .notes').map(n=>{const id=n.getAttribute('data-issue-id');const title=GUIDES[id]?.title||id;const v=n.value.trim();return `【${title}】\n${v or '（未入力）'}`}).join('\n\n');
-    });
-  </script>
+  });
+</script>
   <script>
     copyAllBtn?.addEventListener('click', async ()=>{
       const text=Array.from($$('#guides-root .guide')).map(card=>{
