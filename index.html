@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>やばい職務経歴書チェッカー</title>
+  <meta name="description" content="職務経歴書の“やばポイント”をチェックして改善ガイドを提示する無料ツール（モック版）" />
+  <link rel="icon" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0f1115;--panel:#171A21;--panel-2:#1E232C;--text:#E9EEF5;--muted:#AAB4C3;--accent:#F8C02C;--danger:#FF5A5F;--link:#7AB7FF;--border:#2A3240;--chip-high:#FF5A5F;--chip-med:#F8C02C;--chip-low:#58C0A4;--shadow:0 8px 24px rgba(0,0,0,.35);--radius:12px;--maxw:1040px;--font:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+    *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.65;letter-spacing:.2px}
+    a{color:var(--link)}header{position:sticky;top:0;z-index:10;background:rgba(15,17,21,.7);backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--border)}
+    .container{max-width:var(--maxw);margin:0 auto;padding:0 16px}.center{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700}.brand .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--danger),var(--accent));box-shadow:0 4px 18px rgba(255,90,95,.35)}
+    .hero{padding:32px 0 8px}.hero h1{margin:.2em 0 .1em;font-size:clamp(22px,3.2vw,32px)}.hero p{margin:.2em 0;color:var(--muted)}
+    .grid{display:grid;gap:24px}.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}.card{padding:20px}
+    .drop{display:flex;align-items:center;justify-content:center;text-align:center;min-height:180px;border:2px dashed #2E3747;border-radius:16px;background:var(--panel-2);transition:.2s;outline:none;cursor:pointer}
+    .drop:hover,.drop.drag{border-color:var(--link);box-shadow:0 0 0 4px rgba(122,183,255,.15) inset}.drop .inner{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center}
+    .btn{appearance:none;border:1px solid var(--border);background:#232934;color:var(--text);padding:10px 14px;border-radius:10px;cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg,#2C6BFF,#7AB7FF);border-color:transparent;color:#fff;font-weight:600}.btn.ghost{background:transparent}
+    .hint{color:var(--muted);font-size:13px}.muted{color:var(--muted)}.flex{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.spacer{height:12px}
+    .progress{padding:28px;text-align:center}.spinner{width:44px;height:44px;border-radius:50%;border:4px solid #2E3747;border-top-color:var(--accent);margin:12px auto 8px;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}.summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,90,95,.08),rgba(255,90,95,0));border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:#202632}.badge .dot{width:7px;height:7px;border-radius:50%}.dot.high{background:var(--chip-high)}
+    .acc{padding:0}.acc-item{border-top:1px solid var(--border)}.acc-btn{width:100%;text-align:left;padding:16px;background:transparent;border:0;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer}
+    .acc-btn:focus{outline:2px solid #35507A;outline-offset:-2px;border-radius:8px}.acc-icon{width:20px;text-align:center}.acc-title{flex:1}.acc-count{color:var(--muted);font-size:13px}
+    .acc-panel{max-height:0;overflow:hidden;transition:max-height .25s ease}.acc-panel.open{padding:0 16px 12px}
+    .issue{display:grid;grid-template-columns:1fr;gap:10px;padding:12px;margin:10px 0;border:1px solid var(--border);border-radius:10px;background:var(--panel-2)}
+    .issue-head{display:flex;align-items:center;gap:10px}.sev{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border)}
+    .sev.high{background:rgba(255,90,95,.12)}.sev.med{background:rgba(248,192,44,.12)}.sev.low{background:rgba(88,192,164,.12)}
+    .cta-bar{position:sticky;bottom:0;z-index:5;background:rgba(23,26,33,.85);backdrop-filter:blur(6px);border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:10px;justify-content:space-between;align-items:center}
+    .ad-slot{background:linear-gradient(90deg,#1B2431,#20293A);border:1px dashed #3A4760;border-radius:12px;padding:16px;text-align:center;color:var(--muted)}
+    .guide{display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--panel-2)}.guide h4{margin:0}.tips{margin:0;padding-left:18px}
+    .notes{width:100%;min-height:90px;border-radius:10px;border:1px solid var(--border);background:#11161F;color:var(--text);padding:10px 12px;resize:vertical}
+    .mini-actions{display:flex;gap:8px;flex-wrap:wrap}.footer-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .content{display:grid;grid-template-columns:1fr;gap:24px}@media(min-width:1024px){.content{grid-template-columns:minmax(0,1fr) 320px}.aside{position:sticky;top:72px;height:max-content}}
+    footer{margin:40px 0 24px;color:var(--muted);font-size:13px}code.kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0D1219;padding:2px 6px;border-radius:6px;border:1px solid var(--border)}
+  </style>
+</head>
+<body>
+  <header role="banner" aria-label="アプリケーションヘッダー">
+    <div class="container center">
+      <div class="brand" aria-label="ブランド">
+        <div class="logo" aria-hidden="true"></div><span>やばい職務経歴書チェッカー</span>
+      </div>
+      <nav aria-label="メニュー"><a class="btn ghost" href="/privacy.html" aria-label="プライバシー">プライバシー</a></nav>
+    </div>
+  </header>
+
+  <main class="container" role="main">
+    <section class="hero" aria-labelledby="h-title">
+      <h1 id="h-title">3分で“やばポイント”を可視化</h1>
+      <p class="muted">PDF / Word / TXT に対応。アップロードして即チェック。</p>
+    </section>
+
+    <section id="upload-section" class="grid">
+      <div class="panel card" aria-label="アップロード領域">
+        <label id="dropzone" class="drop" tabindex="0" for="file-input" aria-describedby="drop-hint" aria-label="ファイルをドラッグ＆ドロップ、またはクリックして選択">
+          <div class="inner">
+            <div style="font-size:28px">📂</div>
+            <div><strong>職務経歴書をアップロード</strong></div>
+            <div class="hint" id="drop-hint">対応形式: PDF / DOCX / TXT ・ 最大 10MB</div>
+            <div><button type="button" class="btn">ファイルを選択</button></div>
+          </div>
+        </label>
+        <input id="file-input" type="file" accept=".pdf,.doc,.docx,.txt,.rtf" hidden />
+        <div class="spacer"></div>
+        <div class="hint">※ 本モックはブラウザ内でダミー解析を行います。実データ保存はしません。</div>
+      </div>
+    </section>
+
+    <section id="loading-section" class="panel progress" hidden aria-live="polite">
+      <div class="spinner" role="status" aria-label="解析中"></div>
+      <div>解析中…数秒お待ちください</div>
+    </section>
+
+    <section id="result-wrap" class="content" hidden>
+      <div>
+        <div class="panel">
+          <div class="summary">
+            <div class="score"><strong>🔍 やばポイント <span id="issue-count">0</span>件</strong><span class="badge"><span class="dot high"></span> 重要あり</span></div>
+            <div class="flex">
+              <button id="view-guides-btn" class="btn primary">詳細ガイドを見る</button>
+              <button id="reupload-btn" class="btn">別のファイルで試す</button>
+            </div>
+          </div>
+          <div id="acc-root" class="acc" role="region" aria-label="検出カテゴリ"></div>
+          <div class="cta-bar" aria-hidden="true">
+            <span class="muted">改善のヒントを表示</span>
+            <button class="btn primary" id="view-guides-btn-mobile">詳細ガイドを見る</button>
+          </div>
+        </div>
+
+        <div id="guides-section" class="panel card" hidden>
+          <div id="ad-slot" class="ad-slot" role="complementary" aria-label="広告スロット">
+            <div>スポンサー表示（サンプル）</div>
+            <div class="hint">数秒後に改善ガイドが開きます（音声オフ）</div>
+          </div>
+          <div class="spacer"></div>
+          <div id="guides-root" class="grid" style="gap:16px" hidden></div>
+          <div class="spacer"></div>
+          <div class="footer-actions">
+            <button id="export-txt" class="btn">テキストでエクスポート</button>
+            <button id="copy-all" class="btn">全体をコピー</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="aside">
+        <div class="panel card">
+          <h3 style="margin-top:0">チェック方針</h3>
+          <ul class="muted" style="margin:0; padding-left:18px">
+            <li>具体数値は生成しません（ユーザー入力）</li>
+            <li>過度な装飾はATSで不利</li>
+            <li>ネガティブ表現は前向き言い換えを推奨</li>
+          </ul>
+        </div>
+        <div class="spacer"></div>
+        <div class="panel card">
+          <h3 style="margin-top:0">プライバシー</h3>
+          <p class="muted">アップロードされたファイルは解析後に保存されません。</p>
+        </div>
+      </aside>
+    </section>
+
+    <footer><div class="container">
+      <div>© やばい職務経歴書チェッカー</div>
+      <div class="muted">ショートカット: <code class="kbd">/</code> で「詳細ガイドを見る」</div>
+    </div></footer>
+  </main>
+
+  <script>
+    const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s)), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const el=(t,a={},...c)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='class')n.className=v;else if(k.startsWith('on')&&typeof v==='function')n.addEventListener(k.slice(2),v);else if(v!=null)n.setAttribute(k,v)}c.forEach(x=>n.appendChild(typeof x==='string'?document.createTextNode(x):x));return n}
+
+    const MOCK_ISSUES=[
+      {id:"lack-metrics",title:"成果が数値で示されていません",category:"信頼性・具体性",severity:"high",evidence:["・売上拡大に貢献しました","・顧客満足度向上に尽力しました"]},
+      {id:"vague-role",title:"職務内容が抽象的です",category:"信頼性・具体性",severity:"med",evidence:["・色々な業務を担当しました"]},
+      {id:"neg-leaving",title:"退職理由がネガティブに書かれています",category:"ネガティブ印象ワード",severity:"med",evidence:["・人間関係の悪化により退職"]},
+      {id:"format-dates",title:"日付形式が不統一です",category:"基本情報・体裁",severity:"low",evidence:["・2021/4 と 2021年04月 が混在"]}
+    ];
+    const CATEGORY_ORDER=["基本情報・体裁","信頼性・具体性","ネガティブ印象ワード","誤字・形式的エラー","ATSに不利","読み手印象を下げる構成"];
+    const GUIDES={
+      "lack-metrics":{title:"成果が数値で示されていません",tips:["成果は数値・割合・件数・規模・期間・比較対象を添えると伝わります。","例示は“型”に留め、具体数値はあなた自身で入力してください（虚偽防止）。","比較の軸（前年比・前四半期比・目標比）を明確にしましょう。"],placeholder:"例）新規案件の年間◯◯件、前年比◯◯%、平均リードタイム◯◯日短縮 など"},
+      "vague-role":{title:"職務内容が抽象的です",tips:["「色々」ではなく、担当タスクを列挙しましょう（顧客折衝／資料作成／データ分析 等）。","1タスク=1行で、規模や頻度（週◯回／月◯件）を添えると具体性UP。","使用ツール・関与フェーズ・社内外ステークホルダーも書くと効果的。"],placeholder:"例）週◯回の顧客定例、◯◯資料作成（月◯本）、データ分析（BI: ◯◯） など"},
+      "neg-leaving":{title:"退職理由がネガティブに書かれています",tips:["前向きな動機（新領域への挑戦／スキル向上／責任範囲拡大 等）に言い換えましょう。","事実に忠実かつ簡潔に（1〜2行）。感情表現は避けます。","応募職種と接続する“合理的な理由”を添えると納得感が増します。"],placeholder:"例）◯◯領域での専門性深化を目的に、より◯◯に近い環境を志向 など"},
+      "format-dates":{title:"日付形式が不統一です",tips:["表記は履歴書全体で統一（例：YYYY年MM月）。","在籍期間は月まで記載し、空白期間は簡潔に補足しましょう。","半角・全角の混在にも注意。"],placeholder:"例）2021年04月〜2023年09月、2023年10月〜現在"}
+    };
+
+    const dropzone=$('#dropzone'), fileInput=$('#file-input'), uploadSection=$('#upload-section'), loadingSection=$('#loading-section');
+    const resultWrap=$('#result-wrap'), accRoot=$('#acc-root'), issueCountEl=$('#issue-count');
+    const viewGuidesBtn=$('#view-guides-btn'), viewGuidesBtnMobile=$('#view-guides-btn-mobile');
+    const guidesSection=$('#guides-section'), adSlot=$('#ad-slot'), guidesRoot=$('#guides-root');
+    const reuploadBtn=$('#reupload-btn'), exportTxtBtn=$('#export-txt'), copyAllBtn=$('#copy-all');
+
+    const openFilePicker=()=>fileInput.click();
+    dropzone.addEventListener('click', openFilePicker);
+    dropzone.addEventListener('keydown', e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openFilePicker();}});
+    ['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.add('drag')}));
+    ['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{e.preventDefault();dropzone.classList.remove('drag')}));
+    dropzone.addEventListener('drop', e=>{const f=e.dataTransfer.files?.[0];if(f)handleUpload(f)});
+    fileInput.addEventListener('change', e=>{const f=e.target.files?.[0];if(f)handleUpload(f)});
+
+    async function handleUpload(file){
+      if(!/\.(pdf|docx?|txt|rtf)$/i.test(file.name)){ toast('対応形式は PDF / DOC / DOCX / TXT / RTF です'); return; }
+      uploadSection.hidden=true; loadingSection.hidden=false;
+      await sleep(1000); renderIssues(MOCK_ISSUES);
+      loadingSection.hidden=true; resultWrap.hidden=false;
+    }
+
+    function renderIssues(issues){
+      issueCountEl.textContent=String(issues.length);
+      const byCat={}; CATEGORY_ORDER.forEach(c=>byCat[c]=[]);
+      issues.forEach(i=>{ if(!byCat[i.category]) byCat[i.category]=[]; byCat[i.category].push(i); });
+      accRoot.innerHTML='';
+      Object.entries(byCat).forEach(([cat,list])=>{
+        if(list.length===0) return;
+        const id='acc-'+btoa(cat).replace(/=/g,'');
+        const btn=el('button',{class:'acc-btn','aria-controls':id,'aria-expanded':'false'},
+          el('span',{class:'acc-icon','aria-hidden':'true'},'⚠️'),
+          el('span',{class:'acc-title'},cat),
+          el('span',{class:'acc-count'},`${list.length}件`)
+        );
+        const panel=el('div',{id,class:'acc-panel',role:'region','aria-label':cat});
+        const wrap=el('div',{class:'acc-item'},btn,panel);
+        btn.addEventListener('click',()=>{
+          const opened=panel.style.maxHeight && panel.style.maxHeight!=='0px';
+          if(opened){panel.style.maxHeight='0px';panel.classList.remove('open');btn.setAttribute('aria-expanded','false');}
+          else{panel.style.maxHeight=panel.scrollHeight+'px';panel.classList.add('open');btn.setAttribute('aria-expanded','true');}
+        });
+        list.forEach(issue=>{
+          const sevClass=issue.severity==='high'?'high':issue.severity==='med'?'med':'low';
+          const block=el('div',{class:'issue'},
+            el('div',{class:'issue-head'},el('span',{'aria-hidden':'true'},'⚠️'),el('strong',{},issue.title),el('span',{class:`sev ${sevClass}`},issue.severity.toUpperCase())),
+            issue.evidence?.length?el('div',{class:'evidence'},'例：'+issue.evidence.join(' / ')):el('div')
+          );
+          panel.appendChild(block);
+        });
+        accRoot.appendChild(wrap);
+      });
+    }
+
+    async function openGuides(){
+      guidesSection.hidden=false; guidesRoot.hidden=true; adSlot.hidden=false;
+      await sleep(2000); adSlot.hidden=true; buildGuides(MOCK_ISSUES); guidesRoot.hidden=false;
+      guidesSection.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    function buildGuides(issues){
+      guidesRoot.innerHTML='';
+      issues.forEach(i=>{
+        const g=GUIDES[i.id]; if(!g) return;
+        const tipsList=el('ul',{class:'tips'},...g.tips.map(t=>el('li',{},t)));
+        const notes=el('textarea',{class:'notes',placeholder:g.placeholder,'data-issue-id':i.id});
+        const copyBtn=el('button',{class:'btn',onclick:()=>{navigator.clipboard.writeText(notes.value||'');toast('コピーしました')}},'コピー');
+        const saveBtn=el('button',{class:'btn',onclick:()=>{notes.setAttribute('data-saved','1');toast('一時保存しました')}},'一時保存');
+        const card=el('div',{class:'guide'},el('h4',{},'💡 ',g.title),tipsList,el('label',{},'あなたの修正案を入力'),notes,el('div',{class:'mini-actions'},saveBtn,copyBtn));
+        guidesRoot.appendChild(card);
+      });
+    }
+    exportTxtBtn?.addEventListener('click',()=>{
+      const notes=$$('#guides-root .notes').map(n=>{const id=n.getAttribute('data-issue-id');const title=GUIDES[id]?.title||id;const v=n.value.trim();return `【${title}】\n${v or '（未入力）'}`}).join('\n\n');
+    });
+  </script>
+  <script>
+    copyAllBtn?.addEventListener('click', async ()=>{
+      const text=Array.from($$('#guides-root .guide')).map(card=>{
+        const title=card.querySelector('h4')?.innerText??'';
+        const tips=Array.from(card.querySelectorAll('.tips li')).map(li=>'・'+li.innerText).join('\n');
+        const val=card.querySelector('.notes')?.value??'';
+        return `${title}\n${tips}\n\nあなたの修正案:\n${val}\n`;
+      }).join('\n----------------------\n\n');
+      await navigator.clipboard.writeText(text); toast('全体をコピーしました');
+    });
+    let toastTimer=null;
+    function toast(msg){
+      let t=document.querySelector('#toast');
+      if(!t){ t=document.createElement('div'); t.id='toast'; t.setAttribute('style','position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#10151E;border:1px solid #2A3240;color:#E9EEF5;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:9999'); document.body.appendChild(t); }
+      t.textContent=msg; t.style.opacity='1'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{t.style.opacity='0'},1600);
+    }
+    document.querySelector('#view-guides-btn')?.addEventListener('click', openGuides);
+    document.querySelector('#view-guides-btn-mobile')?.addEventListener('click', openGuides);
+    document.querySelector('#reupload-btn')?.addEventListener('click', ()=>{document.querySelector('#result-wrap').hidden=true;document.querySelector('#guides-section').hidden=true;document.querySelector('#upload-section').hidden=false;document.querySelector('#guides-root').innerHTML=''});
+    document.addEventListener('keydown', e=>{if(e.key==='/'){e.preventDefault();document.querySelector('#result-wrap').hidden?null:openGuides()}});
+  </script>
+</body>
+</html>
