@@ -38,4 +38,81 @@
       <div id="guides" class="hidden" style="margin-top:12px">
         <div class="issue">
           <strong>成果が数値で示されていません</strong> <span class="sev high">HIGH</span>
-          <div class="muted">例）新規案件 年間◯◯件 / 前年比◯◯%
+          <div class="muted">例）新規案件 年間◯◯件 / 前年比◯◯% / リードタイム◯◯日短縮 など（数値はご自身で）</div>
+        </div>
+        <div class="issue">
+          <strong>職務内容が抽象的です</strong> <span class="sev med">MED</span>
+          <div class="muted">タスクを列挙（頻度・規模・ツールも記載）</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // --- 超シンプル：可変は最小限 ---
+  const file  = document.getElementById('file');
+  const load  = document.getElementById('loading');
+  const res   = document.getElementById('result');
+  const list  = document.getElementById('list');
+  const count = document.getElementById('count');
+  const showGuide = document.getElementById('showGuide');
+  const guides = document.getElementById('guides');
+  const reupload = document.getElementById('reupload');
+
+  const MOCK_ISSUES = [
+    {title:"成果が数値で示されていません", sev:"high", evidence:["・売上拡大に貢献しました"]},
+    {title:"職務内容が抽象的です", sev:"med", evidence:["・色々な業務を担当しました"]},
+    {title:"退職理由がネガティブに書かれています", sev:"med", evidence:["・人間関係の悪化により退職"]},
+    {title:"日付形式が不統一です", sev:"low", evidence:["・2021/4 と 2021年04月 が混在"]}
+  ];
+
+  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+  file.addEventListener('change', async (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f){ return; }
+    // 簡単な拡張子チェック
+    if(!/\.(pdf|docx?|txt|rtf)$/i.test(f.name)){
+      alert('対応形式は PDF / DOC / DOCX / TXT / RTF です');
+      file.value = "";
+      return;
+    }
+    // 画面遷移（モック）
+    file.disabled = true;
+    reupload.classList.add('hidden');
+    res.classList.add('hidden');
+    load.classList.remove('hidden');
+
+    await sleep(700); // 擬似解析時間
+
+    // 結果描画
+    list.innerHTML = "";
+    MOCK_ISSUES.forEach(i=>{
+      const div = document.createElement('div');
+      div.className = 'issue';
+      const sevClass = i.sev === 'high' ? 'high' : i.sev === 'med' ? 'med' : 'low';
+      div.innerHTML = `<strong>${i.title}</strong> <span class="sev ${sevClass}">${i.sev.toUpperCase()}</span><div class="muted">${(i.evidence||[]).join(' / ')}</div>`;
+      list.appendChild(div);
+    });
+    count.textContent = String(MOCK_ISSUES.length);
+    load.classList.add('hidden');
+    res.classList.remove('hidden');
+    reupload.classList.remove('hidden');
+  });
+
+  showGuide.addEventListener('click', ()=>{
+    guides.classList.toggle('hidden');
+    showGuide.textContent = guides.classList.contains('hidden') ? '改善ガイドを表示' : '改善ガイドを閉じる';
+  });
+
+  reupload.addEventListener('click', ()=>{
+    // 初期状態に戻す
+    file.disabled = false;
+    file.value = "";
+    res.classList.add('hidden');
+    guides.classList.add('hidden');
+    showGuide.textContent = '改善ガイドを表示';
+  });
+</script>
+</body>
+</html>
