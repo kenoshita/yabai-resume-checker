@@ -3,187 +3,309 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>やばい職務経歴書チェッカー（安定版）</title>
+<title>やばい職務経歴書チェッカー</title>
+<meta name="description" content="職務経歴書の“やばポイント”をチェックして改善ガイドを提示する無料ツール（モック版）">
+<link rel="icon" href="./favicon.svg">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  body{font-family:system-ui,-apple-system,"Segoe UI",Arial; margin:0; padding:24px; background:#0f1115; color:#e9eef5}
-  .card{max-width:900px; margin:0 auto; background:#171a21; border:1px solid #2a3240; border-radius:12px; padding:20px}
-  h1{margin:0 0 8px} .muted{color:#aab4c3}
-  .btn{padding:10px 14px; border-radius:8px; border:1px solid #2a3240; background:#232934; color:#e9eef5; cursor:pointer}
-  .hidden{display:none}
-  #drop{margin:12px 0; padding:24px; text-align:center; border:2px dashed #2e3747; border-radius:12px; background:#1e232c}
-  #drop.drag{border-color:#7ab7ff; box-shadow:0 0 0 4px rgba(122,183,255,.15) inset}
-  .issue{padding:10px; margin:10px 0; border:1px solid #2a3240; border-radius:8px; background:#1e232c}
-  .sev{font-size:12px; padding:2px 8px; border-radius:999px; margin-left:8px; border:1px solid #2a3240}
+  :root{--bg:#0f1115;--panel:#171A21;--panel-2:#1E232C;--text:#E9EEF5;--muted:#AAB4C3;--accent:#F8C02C;--danger:#FF5A5F;--link:#7AB7FF;--border:#2A3240;--shadow:0 8px 24px rgba(0,0,0,.35);--radius:12px;--maxw:1040px;--font:"Noto Sans JP",system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+  *{box-sizing:border-box}html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;line-height:1.65;letter-spacing:.2px}
+  a{color:var(--link)}
+  header{position:sticky;top:0;z-index:10;background:rgba(15,17,21,.7);backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--border)}
+  .container{max-width:var(--maxw);margin:0 auto;padding:0 16px}
+  .center{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+  .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--danger),var(--accent));box-shadow:0 4px 18px rgba(255,90,95,.35)}
+  .hero{padding:32px 0 8px}
+  .hero h1{margin:.2em 0 .1em;font-size:clamp(22px,3.2vw,32px)}
+  .muted{color:var(--muted)}
+  .grid{display:grid;gap:24px}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}
+  .card{padding:20px}
+  .drop{display:flex;align-items:center;justify-content:center;text-align:center;min-height:180px;border:2px dashed #2E3747;border-radius:16px;background:var(--panel-2);transition:.2s;outline:none;cursor:pointer}
+  .drop:hover,.drop.drag{border-color:#7AB7FF;box-shadow:0 0 0 4px rgba(122,183,255,.15) inset}
+  .btn{appearance:none;border:1px solid var(--border);background:#232934;color:#E9EEF5;padding:10px 14px;border-radius:10px;cursor:pointer}
+  .btn.primary{background:linear-gradient(135deg,#2C6BFF,#7AB7FF);border-color:transparent;color:#fff;font-weight:600}
+  .progress{padding:28px;text-align:center}
+  .spinner{width:44px;height:44px;border-radius:50%;border:4px solid #2E3747;border-top-color:var(--accent);margin:12px auto 8px;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .content{display:grid;grid-template-columns:1fr;gap:24px}
+  @media(min-width:1024px){.content{grid-template-columns:minmax(0,1fr) 320px}.aside{position:sticky;top:72px;height:max-content}}
+  .summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(255,90,95,.08),rgba(255,90,95,0));border-top-left-radius:12px;border-top-right-radius:12px}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:#202632}
+  .acc{padding:0}.acc-item{border-top:1px solid var(--border)}
+  .acc-btn{width:100%;text-align:left;padding:16px;background:transparent;border:0;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer}
+  .acc-btn:focus{outline:2px solid #35507A;outline-offset:-2px;border-radius:8px}
+  .acc-icon{width:20px;text-align:center}
+  .acc-title{flex:1}
+  .acc-count{color:var(--muted);font-size:13px}
+  .acc-panel{max-height:0;overflow:hidden;transition:max-height .25s ease}
+  .acc-panel.open{padding:0 16px 12px}
+  .issue{display:grid;grid-template-columns:1fr;gap:10px;padding:12px;margin:10px 0;border:1px solid var(--border);border-radius:10px;background:var(--panel-2)}
+  .sev{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--border)}
   .sev.high{background:rgba(255,90,95,.12)}
   .sev.med{background:rgba(248,192,44,.12)}
   .sev.low{background:rgba(88,192,164,.12)}
-  #loading{margin:16px 0}
-  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#10151E;border:1px solid #2A3240;color:#E9EEF5;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .cta-bar{position:sticky;bottom:0;z-index:5;background:rgba(23,26,33,.85);backdrop-filter:blur(6px);border-top:1px solid var(--border);padding:10px 12px;display:flex;gap:10px;justify-content:space-between;align-items:center}
+  .ad-slot{background:linear-gradient(90deg,#1B2431,#20293A);border:1px dashed #3A4760;border-radius:12px;padding:16px;text-align:center;color:#AAB4C3}
+  .guide{display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--panel-2)}
+  .notes{width:100%;min-height:90px;border-radius:10px;border:1px solid var(--border);background:#11161F;color:#E9EEF5;padding:10px 12px;resize:vertical}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#10151E;border:1px solid #2A3240;color:#E9EEF5;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transition:.2s}
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>やばい職務経歴書チェッカー（モック・安定版）</h1>
-  <p class="muted">PDF / DOC / DOCX / TXT / RTF に対応（モック解析）。</p>
-
-  <div id="drop" tabindex="0" aria-label="ここにファイルをドロップするか、下のボタンで選択">
-    ここにファイルをドロップ
+<header>
+  <div class="container center">
+    <div class="brand"><div class="logo" aria-hidden="true"></div><span>やばい職務経歴書チェッカー</span></div>
+    <nav><a class="btn" href="./privacy.html">プライバシー</a></nav>
   </div>
-  <input id="file" type="file" accept=".pdf,.doc,.docx,.txt,.rtf">
-  <button id="reupload" class="btn hidden">別のファイルで試す</button>
+</header>
 
-  <div id="loading" class="hidden" aria-live="polite">解析中…</div>
+<main class="container">
+  <section class="hero" aria-labelledby="h-title">
+    <h1 id="h-title">3分で“やばポイント”を可視化</h1>
+    <p class="muted">PDF / Word / TXT に対応。アップロードして即チェック（モック）。</p>
+  </section>
 
-  <div id="result" class="hidden">
-    <h3 style="margin:16px 0 8px">🔍 やばポイント <span id="count">0</span>件</h3>
-    <div id="list"></div>
-    <button id="showGuide" class="btn">改善ガイドを表示</button>
-    <div id="guides" class="hidden" style="margin-top:12px">
-      <div class="issue">
-        <strong>成果が数値で示されていません</strong> <span class="sev high">HIGH</span>
-        <div class="muted">例）新規案件 年間◯◯件 / 前年比◯◯% / リードタイム◯◯日短縮（数値はご自身で）</div>
+  <!-- ステップ0：アップロード -->
+  <section id="upload" class="grid">
+    <div class="panel card">
+      <label id="drop" class="drop" tabindex="0" for="file" aria-label="ファイルをドラッグ＆ドロップ、またはクリックして選択">
+        <div>
+          <div style="font-size:28px;text-align:center">📂</div>
+          <div style="text-align:center"><strong>職務経歴書をアップロード</strong></div>
+          <div class="muted" style="text-align:center">対応形式: PDF / DOCX / TXT ・ 最大10MB</div>
+          <div style="text-align:center;margin-top:8px"><button type="button" class="btn" id="pick">ファイルを選択</button></div>
+        </div>
+      </label>
+      <input id="file" type="file" accept=".pdf,.doc,.docx,.txt,.rtf" hidden>
+      <p class="muted" style="margin-top:8px">※ 本モックはブラウザ内でダミー解析。データ保存なし。</p>
+    </div>
+  </section>
+
+  <!-- ステップ0.5：解析中 -->
+  <section id="loading" class="panel progress" hidden aria-live="polite">
+    <div class="spinner" role="status" aria-label="解析中"></div>
+    <div>解析中…数秒お待ちください</div>
+  </section>
+
+  <!-- ステップ1+2：結果 & ガイド -->
+  <section id="content" class="content" hidden>
+    <div>
+      <div class="panel">
+        <div class="summary">
+          <div><strong>🔍 やばポイント <span id="issueCount">0</span>件</strong> <span class="badge"><span style="width:7px;height:7px;border-radius:50%;background:#FF5A5F;display:inline-block"></span> 重要あり</span></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button id="openGuides" class="btn primary">詳細ガイドを見る</button>
+            <button id="retry" class="btn">別のファイルで試す</button>
+          </div>
+        </div>
+        <div id="accRoot" class="acc" role="region" aria-label="検出カテゴリ"></div>
+        <div class="cta-bar">
+          <span class="muted">改善のヒントを表示</span>
+          <button id="openGuidesMobile" class="btn primary">詳細ガイドを見る</button>
+        </div>
       </div>
-      <div class="issue">
-        <strong>職務内容が抽象的です</strong> <span class="sev med">MED</span>
-        <div class="muted">タスクを列挙（頻度・規模・ツールも）</div>
-      </div>
-      <div class="issue">
-        <strong>退職理由がネガティブに書かれています</strong> <span class="sev med">MED</span>
-        <div class="muted">前向きな動機に言い換え（スキル向上/新領域挑戦 等）</div>
-      </div>
-      <div class="issue">
-        <strong>日付形式が不統一です</strong> <span class="sev low">LOW</span>
-        <div class="muted">YYYY年MM月で統一、半角/全角混在に注意</div>
+
+      <div id="guidesSection" class="panel card" hidden>
+        <div id="adSlot" class="ad-slot">
+          <div>スポンサー表示（サンプル）</div>
+          <div class="muted">数秒後に改善ガイドが開きます（音声なし）</div>
+        </div>
+        <div style="height:12px"></div>
+        <div id="guidesRoot" class="grid" style="gap:16px" hidden></div>
+        <div style="height:12px"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button id="exportTxt" class="btn">テキストでエクスポート</button>
+          <button id="copyAll" class="btn">全体をコピー</button>
+        </div>
       </div>
     </div>
-  </div>
-</div>
+
+    <aside class="aside">
+      <div class="panel card">
+        <h3 style="margin:0 0 6px">チェック方針</h3>
+        <ul class="muted" style="margin:0; padding-left:18px">
+          <li>具体数値は生成しません（ユーザー入力）</li>
+          <li>過度な装飾はATSで不利</li>
+          <li>ネガティブ表現は前向きに言い換え</li>
+        </ul>
+      </div>
+      <div style="height:12px"></div>
+      <div class="panel card">
+        <h3 style="margin:0 0 6px">プライバシー</h3>
+        <p class="muted" style="margin:0">アップロードデータは保存しません。</p>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<div id="toast"></div>
 
 <script>
 (function(){
-  // --- 予防：どこかでJSエラーが起きたら通知して止まらないように ---
-  window.addEventListener('error', e=>{
-    showToast('スクリプトエラー: ' + (e.message || 'unknown'));
-  });
-
-  const $id = (x)=>document.getElementById(x);
-  const file  = $id('file');
-  const drop  = $id('drop');
-  const load  = $id('loading');
-  const res   = $id('result');
-  const list  = $id('list');
-  const count = $id('count');
-  const showGuide = $id('showGuide');
-  const guides = $id('guides');
-  const reupload = $id('reupload');
-
-  const MOCK_ISSUES = [
-    {title:"成果が数値で示されていません", sev:"high", evidence:["・売上拡大に貢献しました"]},
-    {title:"職務内容が抽象的です", sev:"med", evidence:["・色々な業務を担当しました"]},
-    {title:"退職理由がネガティブに書かれています", sev:"med", evidence:["・人間関係の悪化により退職"]},
-    {title:"日付形式が不統一です", sev:"low",  evidence:["・2021/4 と 2021年04月 が混在"]}
-  ];
+  // === ユーティリティ ===
+  const $ = (s)=>document.querySelector(s);
+  const $$ = (s)=>Array.from(document.querySelectorAll(s));
   const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+  function toast(msg){
+    const t = $('#toast'); t.textContent = msg; t.style.opacity = '1';
+    setTimeout(()=>{ t.style.opacity = '0'; }, 1600);
+  }
+  function el(tag, attrs={}, ...children){
+    const n = document.createElement(tag);
+    for (const [k,v] of Object.entries(attrs)){
+      if (k==='class') n.className = v;
+      else if (k.startsWith('on') && typeof v==='function') n.addEventListener(k.slice(2), v);
+      else if (v!=null) n.setAttribute(k,v);
+    }
+    children.forEach(c=> n.appendChild(typeof c==='string'? document.createTextNode(c): c));
+    return n;
+  }
 
-  // クリック選択
-  file.addEventListener('change', (e)=>{
-    const f = e.target.files && e.target.files[0];
-    runAnalysis(f);
+  // === DOM参照 ===
+  const drop = $('#drop'), file = $('#file'), pick = $('#pick');
+  const secUpload = $('#upload'), secLoading = $('#loading'), secContent = $('#content');
+  const accRoot = $('#accRoot'), issueCount = $('#issueCount');
+  const btnGuides = $('#openGuides'), btnGuidesM = $('#openGuidesMobile'), btnRetry = $('#retry');
+  const guidesSection = $('#guidesSection'), adSlot = $('#adSlot'), guidesRoot = $('#guidesRoot');
+  const btnExport = $('#exportTxt'), btnCopy = $('#copyAll');
+
+  // === モックデータ ===
+  const MOCK_ISSUES = [
+    {id:"lack-metrics",title:"成果が数値で示されていません",category:"信頼性・具体性",severity:"high",evidence:["・売上拡大に貢献しました","・顧客満足度向上に尽力しました"]},
+    {id:"vague-role",title:"職務内容が抽象的です",category:"信頼性・具体性",severity:"med",evidence:["・色々な業務を担当しました"]},
+    {id:"neg-leaving",title:"退職理由がネガティブに書かれています",category:"ネガティブ印象ワード",severity:"med",evidence:["・人間関係の悪化により退職"]},
+    {id:"format-dates",title:"日付形式が不統一です",category:"基本情報・体裁",severity:"low",evidence:["・2021/4 と 2021年04月 が混在"]}
+  ];
+  const CATEGORY_ORDER = ["基本情報・体裁","信頼性・具体性","ネガティブ印象ワード","誤字・形式的エラー","ATSに不利","読み手印象を下げる構成"];
+  const GUIDES = {
+    "lack-metrics":{title:"成果が数値で示されていません",tips:["成果は数値・割合・件数・規模・期間・比較対象を添える","具体数値はあなた自身で入力（虚偽防止）","比較軸（前年比/前四半期比/目標比）を明確に"],placeholder:"例）新規案件 年間◯◯件／前年比◯◯%／リードタイム◯◯日短縮"},
+    "vague-role":{title:"職務内容が抽象的です",tips:["担当タスクを列挙（顧客折衝/資料作成/分析 等）","1タスク=1行＋規模/頻度（週◯回/月◯件）","使用ツール・関与フェーズ・ステークホルダーを明記"],placeholder:"例）週◯回の定例、◯◯資料（月◯本）、BI:◯◯ など"},
+    "neg-leaving":{title:"退職理由がネガティブ",tips:["前向きな動機に言い換え（新領域/スキル向上等）","事実ベースで1〜2行、感情表現は避ける","応募職種と接続する合理的な理由を添える"],placeholder:"例）◯◯領域の専門性深化のため、より◯◯に近い環境へ"},
+    "format-dates":{title:"日付形式が不統一",tips:["全体で表記統一（YYYY年MM月）","在籍期間は月まで、空白期間は簡潔に補足","半角・全角の混在に注意"],placeholder:"例）2021年04月〜2023年09月、2023年10月〜現在"}
+  };
+
+  // === 安定イベント ===
+  pick.addEventListener('click', ()=> file.click());
+  drop.addEventListener('click', ()=> file.click());
+  drop.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); file.click(); }});
+  ;['dragenter','dragover'].forEach(type=> drop.addEventListener(type, e=>{ e.preventDefault(); drop.classList.add('drag'); }));
+  ;['dragleave','drop'].forEach(type=> drop.addEventListener(type, e=>{ e.preventDefault(); drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', (e)=>{ const f = e.dataTransfer?.files?.[0]; runAnalysis(f); });
+  file.addEventListener('change', (e)=>{ const f = e.target.files?.[0]; runAnalysis(f); });
+
+  btnRetry.addEventListener('click', ()=>{ secContent.hidden=true; guidesSection.hidden=true; secUpload.hidden=false; guidesRoot.innerHTML=''; });
+  btnGuides.addEventListener('click', openGuides);
+  btnGuidesM.addEventListener('click', openGuides);
+
+  btnExport.addEventListener('click', ()=>{
+    const text = Array.from($$('#guidesRoot .guide')).map(card=>{
+      const title = card.querySelector('h4')?.innerText ?? '';
+      const val = card.querySelector('textarea')?.value ?? '';
+      return `【${title}】\n${val || '（未入力）'}`;
+    }).join('\n\n');
+    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='resume-fix-notes.txt'; a.click();
+    URL.revokeObjectURL(url);
+    toast('テキストをダウンロードしました');
+  });
+  btnCopy.addEventListener('click', async ()=>{
+    const text = Array.from($$('#guidesRoot .guide')).map(card=>{
+      const title = card.querySelector('h4')?.innerText ?? '';
+      const tips = Array.from(card.querySelectorAll('.tips li')).map(li=>'・'+li.innerText).join('\n');
+      const val = card.querySelector('textarea')?.value ?? '';
+      return `${title}\n${tips}\n\nあなたの修正案:\n${val}\n`;
+    }).join('\n----------------------\n\n');
+    await navigator.clipboard.writeText(text);
+    toast('全体をコピーしました');
   });
 
-  // ドラッグ&ドロップ
-  ;['dragenter','dragover'].forEach(type=>{
-    drop.addEventListener(type, e=>{ e.preventDefault(); drop.classList.add('drag'); });
-  });
-  ;['dragleave','drop'].forEach(type=>{
-    drop.addEventListener(type, e=>{ e.preventDefault(); drop.classList.remove('drag'); });
-  });
-  drop.addEventListener('drop', (e)=>{
-    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    runAnalysis(f);
-  });
-
-  // ガイドの開閉
-  showGuide.addEventListener('click', ()=>{
-    guides.classList.toggle('hidden');
-    showGuide.textContent = guides.classList.contains('hidden') ? '改善ガイドを表示' : '改善ガイドを閉じる';
-  });
-
-  // やり直し
-  reupload.addEventListener('click', ()=>{
-    res.classList.add('hidden');
-    guides.classList.add('hidden');
-    showGuide.textContent = '改善ガイドを表示';
-    file.value = "";
-    file.disabled = false;
-    showToast('初期化しました');
-  });
-
-  // 共通解析（クリック・ドロップ両方から使用）
+  // === 共通解析 ===
   async function runAnalysis(f){
-    if(!f){ showToast('ファイルが取得できませんでした'); return; }
-    if(!/\.(pdf|docx?|txt|rtf)$/i.test(f.name)){
-      alert('対応形式: PDF / DOC / DOCX / TXT / RTF');
-      return;
-    }
+    if(!f){ toast('ファイルが取得できませんでした'); return; }
+    if(!/\.(pdf|docx?|txt|rtf)$/i.test(f.name)){ toast('対応: PDF / DOC / DOCX / TXT / RTF'); return; }
 
-    try{
-      file.disabled = true;
-      res.classList.add('hidden');
-      guides.classList.add('hidden');
-      showGuide.textContent = '改善ガイドを表示';
-      load.classList.remove('hidden');
+    // 画面切替
+    secUpload.hidden = true; secLoading.hidden = false; secContent.hidden = true; guidesSection.hidden = true;
 
-      // 監視（最大5秒で必ず解除）
-      let timedOut = false;
-      const watchdog = setTimeout(()=>{
-        timedOut = true;
-        load.classList.add('hidden');
-        file.disabled = false;
-        showToast('解析に失敗しました。再試行してください');
-      }, 5000);
+    // タイムアウト監視（最大5秒で復帰）
+    let timedOut=false;
+    const watchdog = setTimeout(()=>{ timedOut=true; secLoading.hidden=true; secUpload.hidden=false; toast('解析に失敗しました。もう一度お試しください'); }, 5000);
 
-      // モック解析
-      await sleep(900);
+    // 擬似解析
+    await sleep(900);
 
-      if (timedOut) return; // タイムアウト済なら何もしない
-      clearTimeout(watchdog);
+    if (timedOut) return;
+    clearTimeout(watchdog);
 
-      // 結果描画
-      list.innerHTML = "";
-      MOCK_ISSUES.forEach(i=>{
-        const div = document.createElement('div');
-        div.className = 'issue';
-        const sevClass = i.sev === 'high' ? 'high' : i.sev === 'med' ? 'med' : 'low';
-        div.innerHTML = `<strong>${i.title}</strong> <span class="sev ${sevClass}">${i.sev.toUpperCase()}</span><div class="muted">${(i.evidence||[]).join(' / ')}</div>`;
-        list.appendChild(div);
+    // ステップ1 描画
+    renderIssues(MOCK_ISSUES);
+
+    secLoading.hidden = true; secContent.hidden = false;
+    file.value = ""; // 同じファイル再選択でも発火するように
+  }
+
+  function renderIssues(issues){
+    issueCount.textContent = String(issues.length);
+    const byCat = {};
+    CATEGORY_ORDER.forEach(c=> byCat[c]=[]);
+    issues.forEach(i=>{ if(!byCat[i.category]) byCat[i.category]=[]; byCat[i.category].push(i); });
+
+    accRoot.innerHTML = '';
+    Object.entries(byCat).forEach(([cat,list])=>{
+      if(list.length===0) return;
+      const id = 'acc-'+btoa(cat).replace(/=/g,'');
+      const btn = el('button',{class:'acc-btn','aria-controls':id,'aria-expanded':'false'},
+        el('span',{class:'acc-icon','aria-hidden':'true'},'⚠️'),
+        el('span',{class:'acc-title'},cat),
+        el('span',{class:'acc-count'},`${list.length}件`)
+      );
+      const panel = el('div',{id,class:'acc-panel',role:'region','aria-label':cat});
+      const wrap = el('div',{class:'acc-item'},btn,panel);
+      btn.addEventListener('click',()=>{
+        const opened = panel.style.maxHeight && panel.style.maxHeight!=='0px';
+        if (opened){ panel.style.maxHeight='0px'; panel.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+        else { panel.style.maxHeight=panel.scrollHeight+'px'; panel.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
       });
-      count.textContent = String(MOCK_ISSUES.length);
-
-      load.classList.add('hidden');
-      res.classList.remove('hidden');
-      reupload.classList.remove('hidden');
-    } catch(err){
-      console.error(err);
-      load.classList.add('hidden');
-      file.disabled = false;
-      alert('想定外のエラーが発生しました');
-    } finally {
-      // 次回のために空にしておく（同じファイル再選択でchangeが発火しない問題の回避）
-      file.value = "";
-    }
+      list.forEach(issue=>{
+        const sevClass = issue.severity==='high'?'high':issue.severity==='med'?'med':'low';
+        panel.appendChild(el('div',{class:'issue'},
+          el('div',{}, el('strong',{},issue.title), el('span',{class:`sev ${sevClass}`},issue.severity.toUpperCase())),
+          el('div',{class:'muted'}, (issue.evidence||[]).join(' / '))
+        ));
+      });
+      accRoot.appendChild(wrap);
+    });
   }
 
-  function showToast(msg){
-    let t = document.getElementById('toast');
-    if(!t){
-      t = document.createElement('div'); t.id='toast'; document.body.appendChild(t);
-      setTimeout(()=>{ if(t) t.remove(); }, 2000);
-    }
-    t.textContent = msg;
+  async function openGuides(){
+    guidesSection.hidden=false; guidesRoot.hidden=true; adSlot.hidden=false;
+    await sleep(1600); // 広告スロットの表示を模擬
+    adSlot.hidden=true; buildGuides(MOCK_ISSUES); guidesRoot.hidden=false;
+    guidesSection.scrollIntoView({behavior:'smooth',block:'start'});
   }
 
-  console.log('[ready] minimal stable build loaded');
+  function buildGuides(issues){
+    guidesRoot.innerHTML='';
+    issues.forEach(i=>{
+      const g = GUIDES[i.id]; if(!g) return;
+      const tips = el('ul',{class:'tips'}, ...g.tips.map(t=> el('li',{},t)));
+      const notes = el('textarea',{class:'notes',placeholder:g.placeholder});
+      const copy = el('button',{class:'btn',onclick:()=>{navigator.clipboard.writeText(notes.value||'');toast('コピーしました')}},'コピー');
+      const save = el('button',{class:'btn',onclick:()=>{notes.setAttribute('data-saved','1');toast('一時保存しました')}},'一時保存');
+      const card = el('div',{class:'guide'}, el('h4',{},'💡 ',g.title), tips, el('label',{},'あなたの修正案を入力'), notes, el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'}, save, copy));
+      guidesRoot.appendChild(card);
+    });
+  }
+
+  // 予防：グローバルJSエラーを見逃さない
+  window.addEventListener('error', e=>{ toast('スクリプトエラー: '+(e.message||'unknown')); });
+
+  console.log('[ready] stable enhanced build loaded');
 })();
 </script>
 </body>
