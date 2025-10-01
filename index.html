@@ -62,7 +62,7 @@
             <div style="font-size:28px">📂</div>
             <div><strong>職務経歴書をアップロード</strong></div>
             <div class="hint" id="drop-hint">対応形式: PDF / DOCX / TXT ・ 最大 10MB</div>
-            <div><button type="button" class="btn">ファイルを選択</button></div>
+            <div><button type="button" class="btn" id="pick-btn">ファイルを選択</button></div>
           </div>
         </label>
         <input id="file-input" type="file" accept=".pdf,.doc,.docx,.txt,.rtf" hidden />
@@ -150,6 +150,8 @@
     };
 
     const dropzone=$('#dropzone'), fileInput=$('#file-input'), uploadSection=$('#upload-section'), loadingSection=$('#loading-section');
+    document.getElementById('pick-btn')?.addEventListener('click', (e)=>{ e.preventDefault();fileInput.click();});
+　　 const resultWrap=$('#result-wrap'), accRoot=$('#acc-root'), issueCountEl=$('#issue-count');
     const resultWrap=$('#result-wrap'), accRoot=$('#acc-root'), issueCountEl=$('#issue-count');
     const viewGuidesBtn=$('#view-guides-btn'), viewGuidesBtnMobile=$('#view-guides-btn-mobile');
     const guidesSection=$('#guides-section'), adSlot=$('#ad-slot'), guidesRoot=$('#guides-root');
