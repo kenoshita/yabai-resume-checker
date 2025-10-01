@@ -3,116 +3,188 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>やばい職務経歴書チェッカー（超シンプル版）</title>
+<title>やばい職務経歴書チェッカー（安定版）</title>
 <style>
-  body{font-family:system-ui, -apple-system, "Segoe UI", Arial; margin:0; padding:24px; background:#0f1115; color:#e9eef5}
-  .card{max-width:800px; margin:0 auto; background:#171a21; border:1px solid #2a3240; border-radius:12px; padding:20px}
-  h1{margin:0 0 12px}
-  .muted{color:#aab4c3}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Arial; margin:0; padding:24px; background:#0f1115; color:#e9eef5}
+  .card{max-width:900px; margin:0 auto; background:#171a21; border:1px solid #2a3240; border-radius:12px; padding:20px}
+  h1{margin:0 0 8px} .muted{color:#aab4c3}
   .btn{padding:10px 14px; border-radius:8px; border:1px solid #2a3240; background:#232934; color:#e9eef5; cursor:pointer}
   .hidden{display:none}
+  #drop{margin:12px 0; padding:24px; text-align:center; border:2px dashed #2e3747; border-radius:12px; background:#1e232c}
+  #drop.drag{border-color:#7ab7ff; box-shadow:0 0 0 4px rgba(122,183,255,.15) inset}
   .issue{padding:10px; margin:10px 0; border:1px solid #2a3240; border-radius:8px; background:#1e232c}
   .sev{font-size:12px; padding:2px 8px; border-radius:999px; margin-left:8px; border:1px solid #2a3240}
   .sev.high{background:rgba(255,90,95,.12)}
   .sev.med{background:rgba(248,192,44,.12)}
   .sev.low{background:rgba(88,192,164,.12)}
+  #loading{margin:16px 0}
+  #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#10151E;border:1px solid #2A3240;color:#E9EEF5;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 </style>
 </head>
 <body>
-  <div class="card">
-    <h1>やばい職務経歴書チェッカー（モック）</h1>
-    <p class="muted">最小構成。ファイルを選ぶと擬似解析→警告を表示します。</p>
+<div class="card">
+  <h1>やばい職務経歴書チェッカー（モック・安定版）</h1>
+  <p class="muted">PDF / DOC / DOCX / TXT / RTF に対応（モック解析）。</p>
 
-    <!-- 1. この input を押すだけでOK。余計なラベルやJSは使いません -->
-    <input id="file" type="file" accept=".pdf,.doc,.docx,.txt,.rtf">
-    <button id="reupload" class="btn hidden">別のファイルで試す</button>
+  <div id="drop" tabindex="0" aria-label="ここにファイルをドロップするか、下のボタンで選択">
+    ここにファイルをドロップ
+  </div>
+  <input id="file" type="file" accept=".pdf,.doc,.docx,.txt,.rtf">
+  <button id="reupload" class="btn hidden">別のファイルで試す</button>
 
-    <!-- 2. 解析中 -->
-    <div id="loading" class="hidden" aria-live="polite" style="margin:16px 0">解析中…</div>
+  <div id="loading" class="hidden" aria-live="polite">解析中…</div>
 
-    <!-- 3. 結果 -->
-    <div id="result" class="hidden">
-      <h3 style="margin:16px 0 8px">🔍 やばポイント <span id="count">0</span>件</h3>
-      <div id="list"></div>
-      <button id="showGuide" class="btn">改善ガイドを表示</button>
-      <div id="guides" class="hidden" style="margin-top:12px">
-        <div class="issue">
-          <strong>成果が数値で示されていません</strong> <span class="sev high">HIGH</span>
-          <div class="muted">例）新規案件 年間◯◯件 / 前年比◯◯% / リードタイム◯◯日短縮 など（数値はご自身で）</div>
-        </div>
-        <div class="issue">
-          <strong>職務内容が抽象的です</strong> <span class="sev med">MED</span>
-          <div class="muted">タスクを列挙（頻度・規模・ツールも記載）</div>
-        </div>
+  <div id="result" class="hidden">
+    <h3 style="margin:16px 0 8px">🔍 やばポイント <span id="count">0</span>件</h3>
+    <div id="list"></div>
+    <button id="showGuide" class="btn">改善ガイドを表示</button>
+    <div id="guides" class="hidden" style="margin-top:12px">
+      <div class="issue">
+        <strong>成果が数値で示されていません</strong> <span class="sev high">HIGH</span>
+        <div class="muted">例）新規案件 年間◯◯件 / 前年比◯◯% / リードタイム◯◯日短縮（数値はご自身で）</div>
+      </div>
+      <div class="issue">
+        <strong>職務内容が抽象的です</strong> <span class="sev med">MED</span>
+        <div class="muted">タスクを列挙（頻度・規模・ツールも）</div>
+      </div>
+      <div class="issue">
+        <strong>退職理由がネガティブに書かれています</strong> <span class="sev med">MED</span>
+        <div class="muted">前向きな動機に言い換え（スキル向上/新領域挑戦 等）</div>
+      </div>
+      <div class="issue">
+        <strong>日付形式が不統一です</strong> <span class="sev low">LOW</span>
+        <div class="muted">YYYY年MM月で統一、半角/全角混在に注意</div>
       </div>
     </div>
   </div>
+</div>
 
 <script>
-  // --- 超シンプル：可変は最小限 ---
-  const file  = document.getElementById('file');
-  const load  = document.getElementById('loading');
-  const res   = document.getElementById('result');
-  const list  = document.getElementById('list');
-  const count = document.getElementById('count');
-  const showGuide = document.getElementById('showGuide');
-  const guides = document.getElementById('guides');
-  const reupload = document.getElementById('reupload');
+(function(){
+  // --- 予防：どこかでJSエラーが起きたら通知して止まらないように ---
+  window.addEventListener('error', e=>{
+    showToast('スクリプトエラー: ' + (e.message || 'unknown'));
+  });
+
+  const $id = (x)=>document.getElementById(x);
+  const file  = $id('file');
+  const drop  = $id('drop');
+  const load  = $id('loading');
+  const res   = $id('result');
+  const list  = $id('list');
+  const count = $id('count');
+  const showGuide = $id('showGuide');
+  const guides = $id('guides');
+  const reupload = $id('reupload');
 
   const MOCK_ISSUES = [
     {title:"成果が数値で示されていません", sev:"high", evidence:["・売上拡大に貢献しました"]},
     {title:"職務内容が抽象的です", sev:"med", evidence:["・色々な業務を担当しました"]},
     {title:"退職理由がネガティブに書かれています", sev:"med", evidence:["・人間関係の悪化により退職"]},
-    {title:"日付形式が不統一です", sev:"low", evidence:["・2021/4 と 2021年04月 が混在"]}
+    {title:"日付形式が不統一です", sev:"low",  evidence:["・2021/4 と 2021年04月 が混在"]}
   ];
+  const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
 
-  function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-  file.addEventListener('change', async (e)=>{
+  // クリック選択
+  file.addEventListener('change', (e)=>{
     const f = e.target.files && e.target.files[0];
-    if(!f){ return; }
-    // 簡単な拡張子チェック
-    if(!/\.(pdf|docx?|txt|rtf)$/i.test(f.name)){
-      alert('対応形式は PDF / DOC / DOCX / TXT / RTF です');
-      file.value = "";
-      return;
-    }
-    // 画面遷移（モック）
-    file.disabled = true;
-    reupload.classList.add('hidden');
-    res.classList.add('hidden');
-    load.classList.remove('hidden');
-
-    await sleep(700); // 擬似解析時間
-
-    // 結果描画
-    list.innerHTML = "";
-    MOCK_ISSUES.forEach(i=>{
-      const div = document.createElement('div');
-      div.className = 'issue';
-      const sevClass = i.sev === 'high' ? 'high' : i.sev === 'med' ? 'med' : 'low';
-      div.innerHTML = `<strong>${i.title}</strong> <span class="sev ${sevClass}">${i.sev.toUpperCase()}</span><div class="muted">${(i.evidence||[]).join(' / ')}</div>`;
-      list.appendChild(div);
-    });
-    count.textContent = String(MOCK_ISSUES.length);
-    load.classList.add('hidden');
-    res.classList.remove('hidden');
-    reupload.classList.remove('hidden');
+    runAnalysis(f);
   });
 
+  // ドラッグ&ドロップ
+  ;['dragenter','dragover'].forEach(type=>{
+    drop.addEventListener(type, e=>{ e.preventDefault(); drop.classList.add('drag'); });
+  });
+  ;['dragleave','drop'].forEach(type=>{
+    drop.addEventListener(type, e=>{ e.preventDefault(); drop.classList.remove('drag'); });
+  });
+  drop.addEventListener('drop', (e)=>{
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    runAnalysis(f);
+  });
+
+  // ガイドの開閉
   showGuide.addEventListener('click', ()=>{
     guides.classList.toggle('hidden');
     showGuide.textContent = guides.classList.contains('hidden') ? '改善ガイドを表示' : '改善ガイドを閉じる';
   });
 
+  // やり直し
   reupload.addEventListener('click', ()=>{
-    // 初期状態に戻す
-    file.disabled = false;
-    file.value = "";
     res.classList.add('hidden');
     guides.classList.add('hidden');
     showGuide.textContent = '改善ガイドを表示';
+    file.value = "";
+    file.disabled = false;
+    showToast('初期化しました');
   });
+
+  // 共通解析（クリック・ドロップ両方から使用）
+  async function runAnalysis(f){
+    if(!f){ showToast('ファイルが取得できませんでした'); return; }
+    if(!/\.(pdf|docx?|txt|rtf)$/i.test(f.name)){
+      alert('対応形式: PDF / DOC / DOCX / TXT / RTF');
+      return;
+    }
+
+    try{
+      file.disabled = true;
+      res.classList.add('hidden');
+      guides.classList.add('hidden');
+      showGuide.textContent = '改善ガイドを表示';
+      load.classList.remove('hidden');
+
+      // 監視（最大5秒で必ず解除）
+      let timedOut = false;
+      const watchdog = setTimeout(()=>{
+        timedOut = true;
+        load.classList.add('hidden');
+        file.disabled = false;
+        showToast('解析に失敗しました。再試行してください');
+      }, 5000);
+
+      // モック解析
+      await sleep(900);
+
+      if (timedOut) return; // タイムアウト済なら何もしない
+      clearTimeout(watchdog);
+
+      // 結果描画
+      list.innerHTML = "";
+      MOCK_ISSUES.forEach(i=>{
+        const div = document.createElement('div');
+        div.className = 'issue';
+        const sevClass = i.sev === 'high' ? 'high' : i.sev === 'med' ? 'med' : 'low';
+        div.innerHTML = `<strong>${i.title}</strong> <span class="sev ${sevClass}">${i.sev.toUpperCase()}</span><div class="muted">${(i.evidence||[]).join(' / ')}</div>`;
+        list.appendChild(div);
+      });
+      count.textContent = String(MOCK_ISSUES.length);
+
+      load.classList.add('hidden');
+      res.classList.remove('hidden');
+      reupload.classList.remove('hidden');
+    } catch(err){
+      console.error(err);
+      load.classList.add('hidden');
+      file.disabled = false;
+      alert('想定外のエラーが発生しました');
+    } finally {
+      // 次回のために空にしておく（同じファイル再選択でchangeが発火しない問題の回避）
+      file.value = "";
+    }
+  }
+
+  function showToast(msg){
+    let t = document.getElementById('toast');
+    if(!t){
+      t = document.createElement('div'); t.id='toast'; document.body.appendChild(t);
+      setTimeout(()=>{ if(t) t.remove(); }, 2000);
+    }
+    t.textContent = msg;
+  }
+
+  console.log('[ready] minimal stable build loaded');
+})();
 </script>
 </body>
 </html>
